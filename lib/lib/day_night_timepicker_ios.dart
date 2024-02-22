@@ -44,6 +44,13 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
   /// Controller for `second` list
   FixedExtentScrollController? _secondController;
 
+  FixedExtentScrollController? _hourController2;
+  FixedExtentScrollController? _minuteController2;
+
+  TimeModelBindingState? timeState2;
+  List<int?> hours2 = [];
+  List<int?> minutes2 = [];
+
   /// List of hours to show
   List<int?> hours = [];
 
@@ -62,6 +69,13 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
         ((timeState!.widget.maxHour! - timeState!.widget.minHour!) + 1).round();
     final _hours = generateHours(
       hourDiv,
+      timeState!.widget.minHour,
+      timeState!.widget.maxHour,
+    );
+    final hourDiv2 =
+        ((timeState!.widget.maxHour! - timeState!.widget.minHour!) + 1).round();
+    final _hours2 = generateHours(
+      hourDiv2,
       timeState!.widget.minHour,
       timeState!.widget.maxHour,
     );
@@ -86,6 +100,13 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
       minMinute,
       maxMinute,
     );
+    final minuteDiv2 = getDivisions(minDiff, timeState!.widget.minuteInterval);
+    List<int?> _minutes2 = generateMinutesOrSeconds(
+      minuteDiv2,
+      timeState!.widget.minuteInterval,
+      minMinute,
+      maxMinute,
+    );
 
     final secondDiv = getDivisions(secDiff, timeState!.widget.secondInterval);
     List<int?> _seconds = generateMinutesOrSeconds(
@@ -98,6 +119,10 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
     final h = timeState!.time.hour;
     final m = timeState!.time.minute;
     final s = timeState!.time.second;
+
+    final h2 = timeState2!.time.hour;
+    final m2 = timeState2!.time.minute;
+    final s2 = timeState2!.time.second;
 
     _hourController =
         FixedExtentScrollController(initialItem: _hours.indexOf(h))
@@ -153,6 +178,60 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
             });
           });
 
+    _hourController2 =
+        FixedExtentScrollController(initialItem: _hours2.indexOf(h2))
+          ..addListener(() {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                timeState2!.onSelectedInputChange(SelectedInput.HOUR);
+              }
+            });
+          })
+          ..addListener(() {
+            _hourController2!.position.isScrollingNotifier.addListener(() {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!_hourController2!.position.isScrollingNotifier.value) {
+                  if (!timeState2!.widget.disableAutoFocusToNextInput) {
+                    timeState2!.onSelectedInputChange(SelectedInput.MINUTE);
+                  }
+                  if (timeState2!.widget.isOnValueChangeMode) {
+                    timeState2!.onOk();
+                  }
+                }
+              });
+            });
+          });
+
+    _minuteController2 =
+        FixedExtentScrollController(initialItem: _minutes2.indexOf(m2))
+          ..addListener(() {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                timeState2!.onSelectedInputChange(SelectedInput.MINUTE);
+                setState(() {
+                  hours2 = _hours2;
+                  minutes2 = _minutes2;
+                  seconds = _seconds;
+                });
+              }
+            });
+          })
+          ..addListener(() {
+            _minuteController2!.position.isScrollingNotifier.addListener(() {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!_minuteController2!.position.isScrollingNotifier.value) {
+                  if (!timeState2!.widget.disableAutoFocusToNextInput &&
+                      timeState2!.widget.showSecondSelector) {
+                    timeState2!.onSelectedInputChange(SelectedInput.SECOND);
+                  }
+                  if (timeState2!.widget.isOnValueChangeMode) {
+                    timeState2!.onOk();
+                  }
+                }
+              });
+            });
+          });
+
     if (timeState!.widget.showSecondSelector) {
       _secondController =
           FixedExtentScrollController(initialItem: _seconds.indexOf(s))
@@ -179,11 +258,16 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
               });
             });
     }
-    if (hours.isEmpty || minutes.isEmpty || seconds.isEmpty) {
+    if (hours.isEmpty || minutes.isEmpty) {
       setState(() {
         hours = _hours;
         minutes = _minutes;
-        seconds = _seconds;
+      });
+    }
+    if (hours2.isEmpty || minutes2.isEmpty) {
+      setState(() {
+        hours2 = _hours2;
+        minutes2 = _minutes2;
       });
     }
 
@@ -235,50 +319,86 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
                     children: <Widget>[
                       const AmPm(),
                       Expanded(
-                        child: Row(
-                          textDirection: ltrMode,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            DisplayWheel(
-                              controller: _hourController!,
-                              items: hours,
-                              isSelected:
-                                  timeState!.selected == SelectedInput.HOUR,
-                              onChange: (int value) {
-                                timeState!.onHourChange(hours[value]! + 0.0);
-                              },
-                              disabled: timeState!.widget.disableHour!,
-                              getModifiedLabel: getModifiedLabel,
+                        child: Column(
+                          children: [
+                            Row(
+                              textDirection: ltrMode,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                DisplayWheel(
+                                  controller: _hourController!,
+                                  items: hours,
+                                  isSelected:
+                                      timeState!.selected == SelectedInput.HOUR,
+                                  onChange: (int value) {
+                                    timeState!
+                                        .onHourChange(hours[value]! + 0.0);
+                                  },
+                                  disabled: timeState!.widget.disableHour!,
+                                  getModifiedLabel: getModifiedLabel,
+                                ),
+                                Text(timeState!.widget.hourLabel!),
+                                DisplayWheel(
+                                  controller: _minuteController!,
+                                  items: minutes,
+                                  isSelected: timeState!.selected ==
+                                      SelectedInput.MINUTE,
+                                  onChange: (int value) {
+                                    timeState!
+                                        .onMinuteChange(minutes[value]! + 0.0);
+                                  },
+                                  disabled: timeState!.widget.disableMinute!,
+                                ),
+                                Text(timeState!.widget.minuteLabel!),
+                                ...(timeState!.widget.showSecondSelector
+                                    ? [
+                                        DisplayWheel(
+                                          controller: _secondController!,
+                                          items: seconds,
+                                          isSelected: timeState!.selected ==
+                                              SelectedInput.SECOND,
+                                          onChange: (int value) {
+                                            timeState!.onSecondChange(
+                                              seconds[value]! + 0.0,
+                                            );
+                                          },
+                                        ),
+                                        Text(timeState!.widget.secondLabel!),
+                                      ]
+                                    : []),
+                              ],
                             ),
-                            Text(timeState!.widget.hourLabel!),
-                            DisplayWheel(
-                              controller: _minuteController!,
-                              items: minutes,
-                              isSelected:
-                                  timeState!.selected == SelectedInput.MINUTE,
-                              onChange: (int value) {
-                                timeState!
-                                    .onMinuteChange(minutes[value]! + 0.0);
-                              },
-                              disabled: timeState!.widget.disableMinute!,
+                            Row(
+                              textDirection: ltrMode,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                DisplayWheel(
+                                  controller: _hourController2!,
+                                  items: hours2,
+                                  isSelected: timeState2!.selected ==
+                                      SelectedInput.HOUR,
+                                  onChange: (int value) {
+                                    timeState2!
+                                        .onHourChange(hours2[value]! + 0.0);
+                                  },
+                                  disabled: timeState2!.widget.disableHour!,
+                                  getModifiedLabel: getModifiedLabel,
+                                ),
+                                Text(timeState2!.widget.hourLabel!),
+                                DisplayWheel(
+                                  controller: _minuteController2!,
+                                  items: minutes2,
+                                  isSelected: timeState2!.selected ==
+                                      SelectedInput.MINUTE,
+                                  onChange: (int value) {
+                                    timeState2!
+                                        .onMinuteChange(minutes2[value]! + 0.0);
+                                  },
+                                  disabled: timeState2!.widget.disableMinute!,
+                                ),
+                                Text(timeState2!.widget.minuteLabel!),
+                              ],
                             ),
-                            Text(timeState!.widget.minuteLabel!),
-                            ...(timeState!.widget.showSecondSelector
-                                ? [
-                                    DisplayWheel(
-                                      controller: _secondController!,
-                                      items: seconds,
-                                      isSelected: timeState!.selected ==
-                                          SelectedInput.SECOND,
-                                      onChange: (int value) {
-                                        timeState!.onSecondChange(
-                                          seconds[value]! + 0.0,
-                                        );
-                                      },
-                                    ),
-                                    Text(timeState!.widget.secondLabel!),
-                                  ]
-                                : []),
                           ],
                         ),
                       ),

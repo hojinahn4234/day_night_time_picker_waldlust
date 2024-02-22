@@ -20,8 +20,8 @@ class WrapperContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeState = TimeModelBinding.of(context);
     final height = timeState.widget.is24HrFormat
-        ? 120.0
-        : timeState.widget.wheelHeight ?? 144.0;
+        ? 200.0
+        : timeState.widget.wheelHeight ?? 240.0;
 
     return Container(
       height: height,
