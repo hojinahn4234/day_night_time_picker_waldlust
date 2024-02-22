@@ -228,11 +228,6 @@ class _DayNightTimePickerIosState extends State<DayNightTimePickerIos> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                DayNightBanner(
-                  sunrise: widget.sunrise,
-                  sunset: widget.sunset,
-                  duskSpanInMinutes: widget.duskSpanInMinutes,
-                ),
                 WrapperContainer(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
